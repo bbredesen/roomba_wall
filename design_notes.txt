@@ -1,0 +1,79 @@
+** In-wall Roomba invisible wall **
+
+The Roomba invisible wall is a narrow IR beam (940nm) pulsing with a carrier
+frequency of ~38.5 kHz. The wall issues a 500 us pulse (0.5 ms) three times,
+8 ms between the start of each pulse, with a 150 ms delay between the start of
+each group. That is, the sequence looks like:
+
+   +(0.5), -(7.5), +(0.5), -(7.5), +(0.5), -(133.5)
+
+...before repeating. This is a total duty cycle of 0.5%.
+
+This sequence will be implemented with two 8-bit counters in the ATtiny85, one
+being the 38.5kHz carrier, and one being the various pulse times, issued on pin
+5 / PB0 / OC0A of the IC.
+
+The on-off counter will execute an interrupt, which will (de)activate the
+carrier wave pin.
+
+Timer0 is the carrier wave and will be in CTC (clear timer on match) mode. At
+1 MHz clock_io, the timer will count to 0x0C before resetting.
+
+Timer1 is the pulse timer. It will be in the Phase Correct PWM mode, which
+enables longer timing due to the up-down counting on the register. The clock
+divider shall be set to 2. The TOV1 interrupt will be called when it counts down
+to 0. OC1A will be set to:
+
+NOTE: The implementation has slightly extended the on/off times to allow much
+longer idle/sleep time on the MCU. For example, the long off pulse time (133.5 ms)
+was initially implemented as 31 interrupts at a clock prescale of 32. Current
+implementation is a single sleep cycle with a divider of 1024 (i.e., 32 x 32).
+Other scales have been applied to the shorter on/off times during the pulse. this
+needs to be tested with the Roomba running to ensure that it is recognized
+correctly.
+
+| OC1A | Loop  | Pulse | Clock |
+| Val. | count | (ms)  | Div.  |
++------+-------+-------+-------+
+|  125 |     1 |   0.5 |     4 | (500 us per loop)
+|  125 |    15 |   7.5 |     4 |
+|  125 |    31 | 126.0 |    32 |
++------+-------+-------+-------+
+
+Power Down on Button Push:
+
+* On INT0 to allow wake from deep sleep mode.
+* Single push (to hold time) will light an indicator led if the unit is in
+a powered state.
+* Hold down for 3 seconds will send the mcu to deep sleep or wake it up. The led
+will fade on or off over three seconds to indicate the state change.
+
+INT0 -> enter power status loop
+if currentState = ON:
+* Take over timer 1, will use OC1B for output. Configure for 170 ms cycle, flash on/off 3 times
+* Eval PB2. If still low, enter power down holding state, send PB4 high
+* Delay 1000 ms
+* Eval PB2. If still low, config timer 1 for descending PWM over 1 second.
+-> 250 steps over 1 second = 4 ms per step. If steps pulse at 25 kHz, then need
+to run 100 PWM loops per step. 25 kHz @ 1 MHz, count to 40
+
+Set OCR0B to 250, set COM0B bits to 11, set WGM bits to 001
+
+TOV0 interrupt will count to 100 and then reduce OCR0B by 1 (reduces PWM duty cycle).
+when OCR0B = 0, set currentState=OFF, deactivate timers, enter deep sleep mode.
+
+if currentState = OFF:
+* delay 2000 ms. If PB2 is still low, set up PWM as above, but COM0B will be 10
+* When OCR0B = 0, set currentState=ON and init for normal IR signaling
+
+
+Future Items:
+
+* Power down all unused components (ADC, USI, etc.) to minimize power consumption - DONE
+
+* Momentary push button input on INT0 pin
+  > Short press flashes an LED if the chip is active. Steady on indicates battery
+  is OK, flashing sequence if battery is low. Requires the ADC. Any value below
+  2.5V? 2V is nominal cutoff for the battery. - TODO
+  > Long press (3 sec) will power on or power off the chip. LED will brighten
+  from 0->100% to indicate power on, reverse to indicate power now off. (Use PWM) - DONE
