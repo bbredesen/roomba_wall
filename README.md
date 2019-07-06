@@ -1,4 +1,4 @@
-# Roomba Virtual Wall
+# Roomba Virtual Wall v3
 (in a tiny package)
 
 This is a virtual wall emitter for your Roomba, packaged on a 25mm-diameter PCB,
@@ -6,14 +6,24 @@ designed to be mounted in a 1-inch hole drilled in a doorframe or wall. I would
 like to get the PCB (and mounting hole) even smaller, but the battery size is
 the limiting factor, and a smaller coin cell would have much shorter life.
 
-(PCB images)
+This project is not affiliated with iRobot Corporation in any way.
+The "Roomba" name is a trademark of iRobot and used here only for clarity on the
+purpose of this hardware and software.
 
-The initial version of the project is driven by an attiny85. On board is the IR
+(PCB images TODO)
+
+This revised version of the project is driven by an ATtiny10. On board is the IR
 emitter that signals the Roomba, an indicator LED and a push-button switch for
 turning the wall on or off. Power is supplied by a CR2032 coin cell mounted on
-the back side of the circuit board.
+the back side of the PCB.
 
-### File Structure
+To reduce power consumption, this iteration has a 1.8V DC-DC converter and runs
+the tiny10 on an external 38.4 kHz crystal, much slower (and lower power consumption)
+than the internal 8/1 MHz clock. The oscillator size was chosen because it is also
+the carrier frequency of the IR signal, letting the crystal do double duty and
+off-loading that work from the MCU.
+
+### Project Structure
 
 * main.c includes the main loop, controls power states, and includes several of
 the interrupt service routines.
@@ -29,34 +39,55 @@ for a usbtiny, replace it with your programmer device as needed. Useful targets:
 * `make compile` - compile to an installable binary (.hex) in ./build/
 * `make clean` - removes the hex and intermediate files
 
-## Version 2:
-
-This is a functional project and I have several of them installed at home
-already. However, battery life (if left on full time) is about 2 months, which is much shorter than I would like. The next hardware revision will explore using an attiny10 (which can have significantly lower power consumption) and a voltage regulator to drop the operating voltage for the whole circuit down to 1.8V.
-
-Reducing the voltage will mean lower consumption by the MCU, as well as lower
-power dissipation in the constant-current circuit that drives the IR emitter.
-The emitter itself is, by far, the highest current consumer on the board (about
-20 mA peak current, 0.5% duty cycle), so I also intend to let the MCU sleep
-longer between pulses.
-
-I'll also be looking at using an external crystal,
-instead of the attiny's internal RC oscillator, which surely consumes more
-power. We may be able to push the tiny's frequency down to the 100 kHz range,
-as it is overpowered and left idle at the stock 1 MHz.
+Notice that there is no ICSP header on the v3 board. The tiny10 will need to be
+flashed using pads on a board with header pins (see https://oshpark.com/shared_projects/2gqu3qVQ)
+before soldering onto the in-wall PCB.
 
 ## IR signal details
 
-The Roomba stock virtual wall emits an IR pulse train at 940nm, on a
-~38.5 kHz carrier. The specific signal is 0.5 ms on, followed by 7.5 ms off,
-three times in a row. This sequence is triggered every 150 ms.
-
-Timer0 on the tiny85 is used to create the 38.5 kHz carrier wave, and Timer1 is
-used to time the on/off pulses.
+The Roomba-brand virtual wall emits an IR pulse train at 940nm, on a
+38.4 kHz carrier. The specific signal is 0.5 ms on, followed by 7.5 ms off,
+three times in a row. This sequence is triggered every 150 ms. This sequence
+was determined by pointing an OEM wall at an IR-sensitive phototransistor and
+connecting the circuit to an oscilloscope.
 
 ## Schematic and BOM
 
-Board schematic was built on Upverter, the project is available to download or
-fork at (URL TODO).
+PCBs are available from OSHPark at https://oshpark.com/shared_projects/ZjEGFO3S/
+
+Board schematic and layout was built on Upverter. The project is available to download or
+fork at https://upverter.com/design/xpctr8/2f7132ff9f9e39a7/.
+
+**NOTE:** as of 2019-07-05,
+there is a bug on Upverter's Gerber generator that exports the battery negative
+pad on the front of the board. Use the corrected Gerber zip file in this repo if
+if you plan to send them to another fab house.
+
+BOM csv file is in the repo.
 
 (BOM TODO)
+
+## Licenses
+
+Open Source hardware. You are free to use, fork, modify, etc.
+
+This is open source software, released under the MIT license:
+
+Copyright 2019 Ben Bredesen
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
