@@ -10,7 +10,7 @@ This project is not affiliated with iRobot Corporation in any way.
 The "Roomba" name is a trademark of iRobot and used here only for clarity on the
 purpose of this hardware and software.
 
-(PCB images TODO)
+![Front of PCB](https://644db4de3505c40a0444-327723bce298e3ff5813fb42baeefbaa.ssl.cf1.rackcdn.com/1f0f042e650c3d6e857f8a47daa28382.png)
 
 This revised version of the project is driven by an ATtiny10. On board is the IR
 emitter that signals the Roomba, an indicator LED and a push-button switch for
@@ -63,7 +63,9 @@ there is a bug on Upverter's Gerber generator that exports the battery negative
 pad on the front of the board. Use the corrected Gerber zip file in this repo if
 if you plan to send them to another fab house.
 
-BOM csv file is in the repo.
+**NOTE:** as of 2023-02-20, I no longer have a local copy of the BOM or schematic and Upverter's "Classic" design mode is not allowing me to login and the link above gets a bad gateway error. When and if I can login, I'll pull and post the files.
+
+~~BOM csv file is in the repo.~~
 
 (BOM TODO)
 
